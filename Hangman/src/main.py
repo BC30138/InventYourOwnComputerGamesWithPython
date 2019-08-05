@@ -1,15 +1,13 @@
 """Main file of game"""
-import pickle
+from hangman_main_module import HangmanMainModule
 
-with open('data/words.dictionary', 'rb') as load_obj_file:
-    WORDS_LOAD = pickle.load(load_obj_file)
-
-def choose_mode():
-    while True:
-        choosen_mode = input()
-        if choosen_mode == 'PvP':
-            mode = 'PvP'
-
-print('''Welcome to
-H A N G M A N
-This is awesome game, just belive''')
+TRY_AGAIN = True
+while TRY_AGAIN:
+    GAME_OBJECT = HangmanMainModule()
+    GAME_OBJECT.start_screen()
+    GAME_OBJECT.choose_mode()
+    GAME_END = False
+    while not GAME_END:
+        GAME_OBJECT.guess_letter()
+        GAME_END = GAME_OBJECT.check_end()
+    TRY_AGAIN = GAME_OBJECT.try_again()

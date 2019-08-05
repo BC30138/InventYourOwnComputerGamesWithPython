@@ -4,7 +4,7 @@ import pickle
 def save_dictionary():
     """creating dictionaty file with words"""
     words = {}
-    words['dev'] = 'cat dog delelopment'.split()
+    words['dev'] = 'cat dog development'.split()
     with open("data/words.txt") as f:
         words['prod'] = []
         for line in f:
