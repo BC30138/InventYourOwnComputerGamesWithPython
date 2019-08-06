@@ -24,3 +24,15 @@ def open_new_window(filename: str):
     elif system == "Windows":
         subprocess.call('start /wait python3 ' + filename, shell=True)
     else: print("Required OS: Linux (with gnome-terminal), Windows or OSX")
+
+def y_or_n(message: str, ):
+    """yes or no interface"""
+    while True:
+        print(message + ' (yes or no)', end=' ')
+        answer: str = input().lower().rstrip()
+        if answer == 'y' or answer == 'yes':
+            return True
+        elif answer == 'n' or answer == 'no':
+            return False
+        else:
+            print('YES OF F**N NO!!!')

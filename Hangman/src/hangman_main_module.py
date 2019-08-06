@@ -2,6 +2,7 @@
 import pickle
 import random
 import os
+from tools import y_or_n
 
 class HangmanMainModule:
     """main class of game"""
@@ -114,15 +115,7 @@ class HangmanMainModule:
 
     def try_again(self):
         """Try again?"""
-        while True:
-            print('Try again? (yes or no):', end=' ')
-            answer: str = input().lower().rstrip()
-            if answer == 'y' or answer == 'yes':
-                return True
-            elif answer == 'n' or answer == 'no':
-                return False
-            else:
-                print('YES OF F** NO!!!')
+        return y_or_n('Try again?')
 
     def start_screen(self):
         """Run start screen"""
