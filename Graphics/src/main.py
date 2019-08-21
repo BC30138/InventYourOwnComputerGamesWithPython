@@ -1,35 +1,30 @@
 """main module"""
 import sys
 import pygame
+import time
 from pygame.locals import QUIT
 from game import Game
-# import os
-# os.environ["SDL_VIDEODRIVER"] = "dummy"
-
-# pygame.init()
-# screen = pygame.display.set_mode((400, 300))
-# done = False
-
-# while not done:
-#     for event in pygame.event.get():
-#         if event.type == pygame.QUIT:
-#             done = True
-#     pygame.display.flip()
 
 
 def main():
     """main func"""
     pygame.init()
     game_object = Game()
-    game_object.draw_text_rect("Fuck")
-    game_object.draw_background(None)
-    game_object.on_screen()
     while True:
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
                 sys.exit()
 
+        game_object.draw_background(None)
+        game_object.draw_lines()
+        # game_object.dot_work()
+        game_object.move_boxes()
+        game_object.draw_circle()
+        game_object.draw_polygon(None)
+        game_object.draw_text_rect("I am not satanist")
+        pygame.display.update()
+        time.sleep(0.01)
 
 if __name__ == "__main__":
     main()
