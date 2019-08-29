@@ -18,8 +18,5 @@ endef
 
 install: ; $(value install_task)
 
-analysis:
-	$(activate) ; $(INTERPRETER) src/ml.py
-
-generate_data:
-	$(activate) ; $(INTERPRETER) src/test_data_set.py
+run:
+	$(activate) ; $(INTERPRETER) src/main.py

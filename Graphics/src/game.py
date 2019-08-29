@@ -33,6 +33,7 @@ class _Unit():
         self.color: str = color
         self.speed: int = speed
 
+
 class _Enemy(_Unit):
     """Class represents food"""
     def __init__(self, size: int, color: tuple, speed: int = None,
@@ -133,6 +134,7 @@ class _Player(_Unit):
             self.obj.right += self.speed
         if self.move_left and self.obj.left > 0:
             self.obj.left -= self.speed
+
 
 class Game():
     """Game module"""
