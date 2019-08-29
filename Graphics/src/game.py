@@ -1,7 +1,12 @@
 """game module"""
-import pygame
+import sys
 import random
-from pygame.locals import NOFRAME
+import pygame
+from pygame.locals import QUIT, KEYDOWN, KEYUP, K_LCTRL, \
+                          K_RCTRL, K_q, MOUSEBUTTONUP, \
+                          K_LEFT, K_RIGHT, K_UP, K_DOWN, \
+                          K_w, K_a, K_s, K_d, K_e
+# from pygame.locals import NOFRAME
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -13,36 +18,147 @@ DOWNLEFT = 'downleft'
 DOWNRIGHT = 'downright'
 UPLEFT = 'upleft'
 UPRIGHT = 'upright'
-MOVESPEED = 1
 
-BOX_1 = {'rect': pygame.Rect(300, 80, 50, 100), 'color': RED, 'dir': UPRIGHT}
-BOX_2 = {'rect': pygame.Rect(200, 200, 20, 20), 'color': GREEN, 'dir': UPLEFT}
-BOX_3 = {'rect': pygame.Rect(100, 150, 60, 60), 'color': BLACK, 'dir': DOWNLEFT}
+WINDOW_WIDTH: int = 600
+WINDOW_HEIGHT: int = 400
+
+class _Unit():
+    """Parent class for as player, as enemies"""
+    def __init__(self, position: tuple, size: int,
+                 color: tuple, speed: int):
+        self.obj: pygame.Rect = pygame.Rect(position[0],
+                                            position[1],
+                                            size, size)
+        self.size: int = size
+        self.color: str = color
+        self.speed: int = speed
+
+class _Enemy(_Unit):
+    """Class represents food"""
+    def __init__(self, size: int, color: tuple, speed: int = None,
+                 position: tuple = None):
+        if not position:
+            position = (random.randint(0, WINDOW_WIDTH - size),
+                        random.randint(0, WINDOW_HEIGHT - size))
+        if not speed:
+            speed = random.randint(1, 6)
+        super().__init__(position=position, size=size,
+                         color=color, speed=speed)
+        self.dir = random.choice([DOWNLEFT, DOWNRIGHT, UPLEFT, UPRIGHT])
+
+    def move(self):
+        """Enemy movement"""
+        if self.dir == DOWNLEFT:
+            self.obj.left -= self.speed
+            self.obj.top += self.speed
+        elif self.dir == DOWNRIGHT:
+            self.obj.left += self.speed
+            self.obj.top += self.speed
+        elif self.dir == UPLEFT:
+            self.obj.left -= self.speed
+            self.obj.top -= self.speed
+        else:
+            self.obj.left += self.speed
+            self.obj.top -= self.speed
+
+        if self.obj.top < 0:
+            if self.dir == UPLEFT:
+                self.dir = DOWNLEFT
+            else:
+                self.dir = DOWNRIGHT
+        elif self.obj.bottom > WINDOW_HEIGHT:
+            if self.dir == DOWNLEFT:
+                self.dir = UPLEFT
+            else:
+                self.dir = UPRIGHT
+        elif self.obj.left < 0:
+            if self.dir == DOWNLEFT:
+                self.dir = DOWNRIGHT
+            else:
+                self.dir = UPRIGHT
+        elif self.obj.right > WINDOW_WIDTH:
+            if self.dir == UPRIGHT:
+                self.dir = UPLEFT
+            else:
+                self.dir = DOWNLEFT
+
+
+class _Player(_Unit):
+    """Class represents player"""
+    def __init__(self, size: int, color: tuple, speed: int):
+        super().__init__(position=(int(WINDOW_WIDTH / 2),
+                                   int(WINDOW_HEIGHT / 2)),
+                         size=size, color=color, speed=speed)
+        self.move_left = False
+        self.move_right = False
+        self.move_up = False
+        self.move_down = False
+
+    def handle_key_down(self, event_key: int):
+        """Handle keys that controls player position are downed"""
+        if event_key == K_LEFT or event_key == K_a:
+            self.move_left = True
+            self.move_right = False
+        elif event_key == K_RIGHT or event_key == K_d:
+            self.move_right = True
+            self.move_left = False
+        elif event_key == K_DOWN or event_key == K_s:
+            self.move_down = True
+            self.move_up = False
+        elif event_key == K_UP or event_key == K_w:
+            self.move_up = True
+            self.move_down = False
+
+    def handle_key_up(self, event_key: int):
+        """Handle keys that controls player position are upped"""
+        if event_key == K_LEFT or event_key == K_a:
+            self.move_left = False
+        elif event_key == K_RIGHT or event_key == K_d:
+            self.move_right = False
+        elif event_key == K_DOWN or event_key == K_s:
+            self.move_down = False
+        elif event_key == K_UP or event_key == K_w:
+            self.move_up = False
+        elif event_key == K_e:
+            self.obj.top = random.randint(0, WINDOW_HEIGHT - self.size)
+            self.obj.left = random.randint(0, WINDOW_WIDTH - self.size)
+
+    def move(self):
+        """Move player's unit"""
+        if self.move_down and self.obj.bottom < WINDOW_HEIGHT:
+            self.obj.top += self.speed
+        if self.move_up and self.obj.top > 0:
+            self.obj.bottom -= self.speed
+        if self.move_right and self.obj.right < WINDOW_WIDTH:
+            self.obj.right += self.speed
+        if self.move_left and self.obj.left > 0:
+            self.obj.left -= self.speed
 
 class Game():
     """Game module"""
     def __init__(self):
-        self.width: int = 600
-        self.height: int = 400
         self.window_surface: pygame.Surface = \
-            pygame.display.set_mode(size=(self.width, self.height),
-                                    flags=NOFRAME,
+            pygame.display.set_mode(size=(WINDOW_WIDTH, WINDOW_HEIGHT),
+                                    # flags=NOFRAME,
                                     display=0)
-        self.center_x: int = self.window_surface.get_rect().centerx
-        self.centet_y: int = self.window_surface.get_rect().centery
         pygame.display.set_caption("Graphics")
-        self.font = pygame.font.SysFont(None, 48)
-        self.text_rect: pygame.Rect
-        self.text: pygame.Surface
-        self.boxes = [BOX_1, BOX_2, BOX_3]
+        self.center_x: int = self.window_surface.get_rect().centerx
+        self.center_y: int = self.window_surface.get_rect().centery
 
-    def draw_text_rect(self, text_str: str):
-        """Text rendering"""
-        self.text = self.font.render(text_str, True, WHITE, BLUE)
-        self.text_rect = self.text.get_rect()
-        self.text_rect.centerx = self.center_x
-        self.text_rect.centery = self.centet_y
-        self.window_surface.blit(self.text, self.text_rect)
+        self.enemy_size: int = 20
+        self.enemies_color: str = GREEN
+        self.enemies_number: int = 10
+        self.enemies: list = [_Enemy(self.enemy_size, self.enemies_color)
+                              for _ in range(self.enemies_number)]
+        self.enemies_spaun_time: int = 40
+        self.spaun_timer: int = 0
+
+        self.player_size: int = 40
+        self.player_color: str = BLACK
+        self.player_speed: int = 5
+        self.player = _Player(size=self.player_size,
+                              color=self.player_color,
+                              speed=self.player_speed)
 
     def draw_background(self, color):
         """Render background"""
@@ -50,84 +166,104 @@ class Game():
             color = WHITE
         self.window_surface.fill(color)
 
-    def draw_polygon(self, color):
+        color = (201, 196, 195)
+        left = (0.0, 0.01 * WINDOW_WIDTH)
+        right = (0.01 * WINDOW_HEIGHT, 0.0)
+        for _ in range(120):
+            pygame.draw.line(self.window_surface, color, left, right, 3)
+            left = (0.0, left[1] + 0.02 * WINDOW_WIDTH)
+            right = (right[0] + 0.02 * WINDOW_HEIGHT, 0.0)
+
+    def draw_logo(self):
         """draw polygon"""
-        if not color:
-            color = RED
-        pygame.draw.polygon(self.window_surface, color, (
-            (self.center_x - 0.02 * self.width, self.centet_y + 0.4 * self.height),
-            (self.center_x + 0.02 * self.width, self.centet_y + 0.4 * self.height),
-            (self.center_x + 0.02 * self.width, self.centet_y + 0.2 * self.height),
-            (self.center_x + 0.15 * self.width, self.centet_y + 0.2 * self.height),
-            (self.center_x + 0.15 * self.width, self.centet_y + 0.1 * self.width),
-            (self.center_x + 0.02 * self.width, self.centet_y + 0.1 * self.width),
-            (self.center_x + 0.02 * self.width, self.centet_y - 0.4 * self.height),
-            (self.center_x - 0.02 * self.width, self.centet_y - 0.4 * self.height),
-            (self.center_x - 0.02 * self.width, self.centet_y + 0.1 * self.width),
-            (self.center_x - 0.15 * self.width, self.centet_y + 0.1 * self.width),
-            (self.center_x - 0.15 * self.width, self.centet_y + 0.2 * self.height),
-            (self.center_x - 0.02 * self.width, self.centet_y + 0.2 * self.height),
+        scale_logo = 0.3
+        center_x_logo = 0.93 * WINDOW_WIDTH
+        center_y_logo = 0.08 * WINDOW_HEIGHT
+        width_logo = WINDOW_WIDTH * scale_logo
+        height_logo = WINDOW_HEIGHT * scale_logo
+
+        circle_color = (235, 182, 178)
+        pygame.draw.circle(self.window_surface, circle_color,
+                           (int(center_x_logo), int(center_y_logo) +
+                            int(0.15 * height_logo)),
+                           int(0.1 * width_logo), 0)
+
+        cross_color = RED
+        pygame.draw.polygon(self.window_surface, cross_color, (
+            (center_x_logo - 0.02 * width_logo,
+             center_y_logo + 0.4 * height_logo),
+            (center_x_logo + 0.02 * width_logo,
+             center_y_logo + 0.4 * height_logo),
+            (center_x_logo + 0.02 * width_logo,
+             center_y_logo + 0.2 * height_logo),
+            (center_x_logo + 0.15 * width_logo,
+             center_y_logo + 0.2 * height_logo),
+            (center_x_logo + 0.15 * width_logo,
+             center_y_logo + 0.1 * width_logo),
+            (center_x_logo + 0.02 * width_logo,
+             center_y_logo + 0.1 * width_logo),
+            (center_x_logo + 0.02 * width_logo,
+             center_y_logo - 0.2 * height_logo),
+            (center_x_logo - 0.02 * width_logo,
+             center_y_logo - 0.2 * height_logo),
+            (center_x_logo - 0.02 * width_logo,
+             center_y_logo + 0.1 * width_logo),
+            (center_x_logo - 0.15 * width_logo,
+             center_y_logo + 0.1 * width_logo),
+            (center_x_logo - 0.15 * width_logo,
+             center_y_logo + 0.2 * height_logo),
+            (center_x_logo - 0.02 * width_logo,
+             center_y_logo + 0.2 * height_logo),
             ), 2)
 
-    def draw_lines(self):
-        """draw lines of course"""
-        color = (201, 196, 195)
-        left = (0.0, 0.01 * self.width)
-        right = (0.01 * self.height, 0.0)
-        for it in range(120):
-            pygame.draw.line(self.window_surface, color, left, right, 3)
-            left = (0.0, left[1] + 0.02 * self.width)
-            right = (right[0] + 0.02 * self.height, 0.0)
 
-    def draw_circle(self):
-        """draw circle"""
-        color = (235, 182, 178)
-        pygame.draw.circle(self.window_surface, color,
-                           (self.center_x, self.centet_y + int(0.15 * self.height)),
-                           int(0.1 * self.width), 0)
+        font = pygame.font.SysFont(None, int(48 * scale_logo))
+        text_rect: pygame.Rect
+        text: pygame.Surface
 
-    def dot_work(self):
-        """change one pixel"""
-        pix_array = pygame.PixelArray(self.window_surface)
-        pix_array[400][133] = BLACK
-        pix_array[400][134] = BLACK
-        pix_array[400][135] = BLACK
+        text = font.render("I am not satanist", True, WHITE, BLUE)
+        text_rect = text.get_rect()
+        text_rect.centerx = center_x_logo
+        text_rect.centery = center_y_logo + 0.05 * height_logo
+        self.window_surface.blit(text, text_rect)
 
-    def move_boxes(self):
-        """Moving boxes"""
-        for box in self.boxes:
-            if box['dir'] == DOWNLEFT:
-                box['rect'].left -= MOVESPEED
-                box['rect'].top += MOVESPEED
-            elif box['dir'] == DOWNRIGHT:
-                box['rect'].left += MOVESPEED
-                box['rect'].top += MOVESPEED
-            elif box['dir'] == UPLEFT:
-                box['rect'].left -= MOVESPEED
-                box['rect'].top -= MOVESPEED
-            else:
-                box['rect'].left += MOVESPEED
-                box['rect'].top -= MOVESPEED
+    def event_handler(self):
+        """Event handler"""
+        pressed = pygame.key.get_pressed()
+        if (pressed[K_LCTRL] or pressed[K_RCTRL]) and pressed[K_q]:
+            pygame.quit()
+            sys.exit()
 
-            if box['rect'].top < 0:
-                if box['dir'] == UPLEFT:
-                    box['dir'] = DOWNLEFT
-                else:
-                    box['dir'] = DOWNRIGHT
-            elif box['rect'].bottom > self.height:
-                if box['dir'] == DOWNLEFT:
-                    box['dir'] = UPLEFT
-                else:
-                    box['dir'] = UPRIGHT
-            elif box['rect'].left < 0:
-                if box['dir'] == DOWNLEFT:
-                    box['dir'] = DOWNRIGHT
-                else:
-                    box['dir'] = UPRIGHT
-            elif box['rect'].right > self.width:
-                if box['dir'] == UPRIGHT:
-                    box['dir'] = UPLEFT
-                else:
-                    box['dir'] = DOWNLEFT
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == KEYDOWN:
+                self.player.handle_key_down(event.key)
+            if event.type == KEYUP:
+                self.player.handle_key_up(event.key)
+            if event.type == MOUSEBUTTONUP:
+                self.enemies.append(_Enemy(self.enemy_size, self.enemies_color,
+                                           position=event.pos))
 
-            pygame.draw.rect(self.window_surface, box['color'], box['rect'], 2)
+    def move_enemies(self):
+        """Move enemies"""
+        for enemy in self.enemies:
+            enemy.move()
+            pygame.draw.rect(self.window_surface, enemy.color, enemy.obj)
+
+    def move_player(self):
+        """Move player"""
+        self.player.move()
+        pygame.draw.rect(self.window_surface, self.player.color, self.player.obj)
+
+        for enemy in self.enemies:
+            if self.player.obj.colliderect(enemy.obj):
+                self.enemies.remove(enemy)
+
+    def spaun_enemy(self):
+        """Spaun new enemy by timer"""
+        self.spaun_timer += 1
+        if self.spaun_timer >= self.enemies_spaun_time:
+            self.spaun_timer = 0
+            self.enemies.append(_Enemy(self.enemy_size, self.enemies_color))

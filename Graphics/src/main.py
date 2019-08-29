@@ -1,30 +1,21 @@
 """main module"""
-import sys
 import pygame
-import time
-from pygame.locals import QUIT
 from game import Game
-
 
 def main():
     """main func"""
     pygame.init()
+    main_clock = pygame.time.Clock()
     game_object = Game()
     while True:
-        for event in pygame.event.get():
-            if event.type == QUIT:
-                pygame.quit()
-                sys.exit()
-
+        game_object.event_handler()
         game_object.draw_background(None)
-        game_object.draw_lines()
-        # game_object.dot_work()
-        game_object.move_boxes()
-        game_object.draw_circle()
-        game_object.draw_polygon(None)
-        game_object.draw_text_rect("I am not satanist")
+        game_object.spaun_enemy()
+        game_object.move_player()
+        game_object.move_enemies()
+        game_object.draw_logo()
         pygame.display.update()
-        time.sleep(0.01)
+        main_clock.tick(30)
 
 if __name__ == "__main__":
     main()
