@@ -14,6 +14,8 @@ RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 
+SPRITES_PATH = "data/sprites/"
+
 DOWNLEFT = 'downleft'
 DOWNRIGHT = 'downright'
 UPLEFT = 'upleft'
@@ -25,26 +27,94 @@ WINDOW_HEIGHT: int = 400
 class _Unit():
     """Parent class for as player, as enemies"""
     def __init__(self, position: tuple, size: int,
-                 color: tuple, speed: int):
+                 sprite_name: str, speed: int, frames_num: int,
+                 main_sprite_timer: int, collision_frame_num: int,
+                 collision_sprite_timer: int):
         self.obj: pygame.Rect = pygame.Rect(position[0],
                                             position[1],
                                             size, size)
         self.size: int = size
-        self.color: str = color
         self.speed: int = speed
+        self.collision = False
+
+        self.time_it: int = 0
+
+        self.frames_num = frames_num
+        self.current_frame: int = 0
+        self.main_sprite_timer: int = main_sprite_timer
+
+        self.sprites: list = []
+        for sprite_it in range(frames_num):
+            sprite = pygame.image.load(sprite_name + "_" + str(sprite_it) + ".png")
+            self.sprites.append(pygame.transform.scale(sprite, (size, size)))
+        self.sprite = self.sprites[0]
+
+        self.collision_anim_it: int
+        self.collision_sprite_timer: int
+        self.collision_frame_num: int = collision_frame_num
+        self.coll_sprites: list = []
+        for col_it in range(collision_frame_num):
+            sprite = pygame.image.load(sprite_name + "_collision_" + str(col_it) + ".png")
+            self.coll_sprites.append(pygame.transform.scale(sprite, (size, size)))
+        if collision_sprite_timer:
+            self.collision_sprite_timer = collision_sprite_timer
+        else:
+            self.collision_sprite_timer = self.main_sprite_timer
+
+    def update_animation(self):
+        """Giffy"""
+        self.time_it += 1
+        if self.time_it >= self.main_sprite_timer:
+            self.time_it = 0
+            self.current_frame += 1
+            if self.current_frame >= self.frames_num:
+                self.current_frame = 0
+            self.sprite = self.sprites[self.current_frame]
+
+    def set_collision(self):
+        """init collision"""
+        self.sprite = self.coll_sprites[0]
+        self.collision = True
+        self.collision_anim_it = 0
+        self.time_it = 0
+
+    def animate_collision(self) -> bool:
+        """collision animation"""
+        self.time_it += 1
+        if self.time_it >= self.collision_sprite_timer:
+            self.time_it = 0
+            self.collision_anim_it += 1
+            if self.collision_anim_it >= self.collision_frame_num:
+                self.collision_anim_it = 0
+                self.collision = False
+            else:
+                self.sprite = self.coll_sprites[self.collision_anim_it]
+
+    def draw(self):
+        """draw unit"""
+        # print(self.collision)
+        if self.collision:
+            self.animate_collision()
+        else:
+            self.update_animation()
 
 
 class _Enemy(_Unit):
     """Class represents food"""
-    def __init__(self, size: int, color: tuple, speed: int = None,
-                 position: tuple = None):
+    def __init__(self, size: int, sprite_name: str, speed: int = None,
+                 position: tuple = None, frames_num: int = 1,
+                 main_sprite_timer: int = 1, collision_frame_num: int = 0,
+                 collision_sprite_timer: int = None):
         if not position:
             position = (random.randint(0, WINDOW_WIDTH - size),
                         random.randint(0, WINDOW_HEIGHT - size))
         if not speed:
             speed = random.randint(1, 6)
         super().__init__(position=position, size=size,
-                         color=color, speed=speed)
+                         sprite_name=sprite_name, speed=speed,
+                         frames_num=frames_num, main_sprite_timer=main_sprite_timer,
+                         collision_frame_num=collision_frame_num,
+                         collision_sprite_timer=collision_sprite_timer)
         self.dir = random.choice([DOWNLEFT, DOWNRIGHT, UPLEFT, UPRIGHT])
 
     def move(self):
@@ -86,10 +156,17 @@ class _Enemy(_Unit):
 
 class _Player(_Unit):
     """Class represents player"""
-    def __init__(self, size: int, color: tuple, speed: int):
+    def __init__(self, size: int, sprite_name: str,
+                 speed: int, frames_num: int = 1,
+                 main_sprite_timer: int = 1,
+                 collision_frame_num: int = 0,
+                 collision_sprite_timer: int = None):
         super().__init__(position=(int(WINDOW_WIDTH / 2),
                                    int(WINDOW_HEIGHT / 2)),
-                         size=size, color=color, speed=speed)
+                         size=size, sprite_name=sprite_name, speed=speed,
+                         frames_num=frames_num, main_sprite_timer=main_sprite_timer,
+                         collision_frame_num=collision_frame_num,
+                         collision_sprite_timer=collision_sprite_timer)
         self.move_left = False
         self.move_right = False
         self.move_up = False
@@ -147,20 +224,23 @@ class Game():
         self.center_x: int = self.window_surface.get_rect().centerx
         self.center_y: int = self.window_surface.get_rect().centery
 
-        self.enemy_size: int = 20
-        self.enemies_color: str = GREEN
-        self.enemies_number: int = 10
-        self.enemies: list = [_Enemy(self.enemy_size, self.enemies_color)
-                              for _ in range(self.enemies_number)]
+        self.enemy_specs: dict = {
+            'size': 30,
+            'sprite_name': SPRITES_PATH + "burger",
+        }
+        enemies_number: int = 10
+        self.enemies: list = [_Enemy(**self.enemy_specs)
+                              for _ in range(enemies_number)]
         self.enemies_spaun_time: int = 40
         self.spaun_timer: int = 0
 
-        self.player_size: int = 40
-        self.player_color: str = BLACK
-        self.player_speed: int = 5
-        self.player = _Player(size=self.player_size,
-                              color=self.player_color,
-                              speed=self.player_speed)
+        self.player = _Player(size=50,
+                              sprite_name=SPRITES_PATH + "firehead",
+                              speed=5,
+                              frames_num=4,
+                              main_sprite_timer=3,
+                              collision_frame_num=1,
+                              collision_sprite_timer=5)
 
     def draw_background(self, color):
         """Render background"""
@@ -245,27 +325,31 @@ class Game():
             if event.type == KEYUP:
                 self.player.handle_key_up(event.key)
             if event.type == MOUSEBUTTONUP:
-                self.enemies.append(_Enemy(self.enemy_size, self.enemies_color,
+                self.enemies.append(_Enemy(**self.enemy_specs,
                                            position=event.pos))
 
     def move_enemies(self):
         """Move enemies"""
         for enemy in self.enemies:
             enemy.move()
-            pygame.draw.rect(self.window_surface, enemy.color, enemy.obj)
+            enemy.draw()
+            self.window_surface.blit(enemy.sprite, enemy.obj)
 
     def move_player(self):
         """Move player"""
         self.player.move()
-        pygame.draw.rect(self.window_surface, self.player.color, self.player.obj)
 
         for enemy in self.enemies:
             if self.player.obj.colliderect(enemy.obj):
                 self.enemies.remove(enemy)
+                self.player.set_collision()
+
+        self.player.draw()
+        self.window_surface.blit(self.player.sprite, self.player.obj)
 
     def spaun_enemy(self):
         """Spaun new enemy by timer"""
         self.spaun_timer += 1
         if self.spaun_timer >= self.enemies_spaun_time:
             self.spaun_timer = 0
-            self.enemies.append(_Enemy(self.enemy_size, self.enemies_color))
+            self.enemies.append(_Enemy(**self.enemy_specs))
