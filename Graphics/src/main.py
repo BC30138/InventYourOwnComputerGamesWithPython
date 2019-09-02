@@ -4,6 +4,7 @@ from game import Game
 
 def main():
     """main func"""
+    pygame.mixer.pre_init(44100, -16, 2, 1024)
     pygame.init()
     main_clock = pygame.time.Clock()
     game_object = Game()

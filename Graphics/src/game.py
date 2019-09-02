@@ -3,7 +3,7 @@ import sys
 import random
 import pygame
 from pygame.locals import QUIT, KEYDOWN, KEYUP, K_LCTRL, \
-                          K_RCTRL, K_q, MOUSEBUTTONUP, \
+                          K_RCTRL, K_q, K_m, MOUSEBUTTONUP, \
                           K_LEFT, K_RIGHT, K_UP, K_DOWN, \
                           K_w, K_a, K_s, K_d, K_e
 # from pygame.locals import NOFRAME
@@ -169,8 +169,8 @@ class _Player(_Unit):
         elif event_key == K_UP or event_key == K_w:
             self.move_up = False
         elif event_key == K_e:
-            self.obj.top = random.randint(0, WINDOW_HEIGHT - self.size)
-            self.obj.left = random.randint(0, WINDOW_WIDTH - self.size)
+            self.obj.top = random.randint(0, WINDOW_HEIGHT - self.obj.height)
+            self.obj.left = random.randint(0, WINDOW_WIDTH - self.obj.width)
 
     def move(self):
         """Move player's unit"""
@@ -213,6 +213,12 @@ class Game():
         pygame.display.set_caption("Graphics")
         self.center_x: int = self.window_surface.get_rect().centerx
         self.center_y: int = self.window_surface.get_rect().centery
+
+        pygame.mixer.music.load('data/sounds/background.wav')
+        pygame.mixer.music.play(-1, 0.0)
+
+        self.pickup_sound = pygame.mixer.Sound('data/sounds/pickup_0.wav')
+        self.music_mute = False
 
         enemy_sprites = {
             'main' : [pygame.image.load(SPRITES_PATH + "burger_0.png")]
@@ -332,6 +338,12 @@ class Game():
                 self.player.handle_key_down(event.key)
             if event.type == KEYUP:
                 self.player.handle_key_up(event.key)
+                if event.key == K_m:
+                    if self.music_mute:
+                        pygame.mixer.music.play(-1, 0.0)
+                    else:
+                        pygame.mixer.music.stop()
+                    self.music_mute = not self.music_mute
             if event.type == MOUSEBUTTONUP:
                 self.enemies.append(_Enemy(**self.enemy_specs,
                                            position=event.pos))
@@ -349,6 +361,8 @@ class Game():
 
         for enemy in self.enemies:
             if self.player.obj.colliderect(enemy.obj):
+                if not self.music_mute:
+                    self.pickup_sound.play()
                 self.enemies.remove(enemy)
                 self.player.set_collision()
 
