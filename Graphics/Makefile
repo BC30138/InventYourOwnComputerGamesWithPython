@@ -16,6 +16,9 @@ fi
 pip install -r dev-requirements.txt
 endef
 
+.PHONY : install run
+.SILENT: install run
+
 install: ; $(value install_task)
 
 run:
