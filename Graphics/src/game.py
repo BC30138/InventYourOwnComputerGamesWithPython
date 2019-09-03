@@ -1,11 +1,13 @@
 """game module"""
 import sys
 import random
+from PIL import Image, ImageFilter
 import pygame
 from pygame.locals import QUIT, KEYDOWN, KEYUP, K_LCTRL, \
                           K_RCTRL, K_q, K_m, MOUSEBUTTONUP, \
                           K_LEFT, K_RIGHT, K_UP, K_DOWN, \
-                          K_w, K_a, K_s, K_d, K_e
+                          K_w, K_a, K_s, K_d, K_e, \
+                          FULLSCREEN
 # from pygame.locals import NOFRAME
 
 BLACK = (0, 0, 0)
@@ -21,8 +23,8 @@ DOWNRIGHT = 'downright'
 UPLEFT = 'upleft'
 UPRIGHT = 'upright'
 
-WINDOW_WIDTH: int = 600
-WINDOW_HEIGHT: int = 400
+WINDOW_WIDTH: int
+WINDOW_HEIGHT: int
 
 class _Unit():
     """Parent class for as player, as enemies"""
@@ -207,12 +209,25 @@ class Game():
     """Game module"""
     def __init__(self):
         self.window_surface: pygame.Surface = \
-            pygame.display.set_mode(size=(WINDOW_WIDTH, WINDOW_HEIGHT),
-                                    # flags=NOFRAME,
+            pygame.display.set_mode(size=(1920, 1080),
+                                    flags=FULLSCREEN,
                                     display=0)
+
+        global WINDOW_WIDTH, WINDOW_HEIGHT
+        WINDOW_WIDTH, WINDOW_HEIGHT = self.window_surface.get_size()
+
         pygame.display.set_caption("Graphics")
         self.center_x: int = self.window_surface.get_rect().centerx
         self.center_y: int = self.window_surface.get_rect().centery
+
+        background = Image.open("data/sprites/background.jpg")\
+            .filter(ImageFilter.GaussianBlur(radius=4))
+        background = pygame.image.fromstring(background.tobytes("raw", "RGB"),
+                                             background.size, "RGB")
+        background = pygame.transform.scale(background,
+                                            [WINDOW_WIDTH,
+                                             WINDOW_HEIGHT])
+        self.background = background.convert()
 
         pygame.mixer.music.load('data/sounds/background.wav')
         pygame.mixer.music.play(-1, 0.0)
@@ -256,7 +271,11 @@ class Game():
                               for _ in range(enemies_number)]
         self.player = _Player(**player_specs)
 
-    def draw_background(self, color):
+    def draw_background(self):
+        """Render background"""
+        self.window_surface.blit(self.background, [0, 0])
+
+    def draw_background_lines(self, color):
         """Render background"""
         if not color:
             color = WHITE
