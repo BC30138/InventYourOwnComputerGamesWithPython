@@ -14,6 +14,7 @@ def main():
         game_object.spaun_enemy()
         game_object.move_player()
         game_object.move_enemies()
+        game_object.draw_score()
         pygame.display.update()
         main_clock.tick(30)
 

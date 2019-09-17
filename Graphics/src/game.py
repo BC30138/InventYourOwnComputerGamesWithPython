@@ -7,7 +7,7 @@ from pygame.locals import QUIT, KEYDOWN, KEYUP, K_LCTRL, \
                           K_RCTRL, K_q, K_m, MOUSEBUTTONUP, \
                           K_LEFT, K_RIGHT, K_UP, K_DOWN, \
                           K_w, K_a, K_s, K_d, K_e, \
-                          FULLSCREEN
+                          FULLSCREEN, RESIZABLE
 # from pygame.locals import NOFRAME
 
 BLACK = (0, 0, 0)
@@ -25,6 +25,36 @@ UPRIGHT = 'upright'
 
 WINDOW_WIDTH: int
 WINDOW_HEIGHT: int
+
+def terminate():
+    """Quit game"""
+    pygame.quit()
+    sys.exit()
+
+def draw_text(text: str, font, color, surface, coord: tuple):
+    """Draw text"""
+    text_obj = font.render(text, True, color)
+    text_rect = text_obj.get_rect()
+    text_rect.topleft = coord
+    surface.blit(text_obj, text_rect)
+
+def text_hollow(font, message, fontcolor, basecolor):
+    """Hollow font"""
+    notcolor = [c^0xFF for c in fontcolor]
+    base = font.render(message, 0, fontcolor, notcolor)
+    size = base.get_width() + 2, base.get_height() + 2
+    img = pygame.Surface(size, 16)
+    img.fill(notcolor)
+    base.set_colorkey(0)
+    img.blit(base, (0, 0))
+    img.blit(base, (2, 0))
+    img.blit(base, (0, 2))
+    img.blit(base, (2, 2))
+    base.set_colorkey(0)
+    base.set_palette_at(1, basecolor)
+    img.blit(base, (1, 1))
+    img.set_colorkey(notcolor)
+    return img
 
 class _Unit():
     """Parent class for as player, as enemies"""
@@ -209,16 +239,20 @@ class Game():
     """Game module"""
     def __init__(self):
         self.window_surface: pygame.Surface = \
-            pygame.display.set_mode(size=(1920, 1080),
-                                    flags=FULLSCREEN,
+            pygame.display.set_mode(size=(860, 540),
+                                    # flags=RESIZABLE,
                                     display=0)
 
         global WINDOW_WIDTH, WINDOW_HEIGHT
         WINDOW_WIDTH, WINDOW_HEIGHT = self.window_surface.get_size()
 
+        self.fps = 60
+
         pygame.display.set_caption("Graphics")
         self.center_x: int = self.window_surface.get_rect().centerx
         self.center_y: int = self.window_surface.get_rect().centery
+
+        self.font = pygame.font.Font("data/DoubleFeature20.ttf", 30)
 
         background = Image.open("data/sprites/background.jpg")\
             .filter(ImageFilter.GaussianBlur(radius=4))
@@ -271,9 +305,23 @@ class Game():
                               for _ in range(enemies_number)]
         self.player = _Player(**player_specs)
 
+        self.score: int = 0
+        self.top_score: int = 0
+
     def draw_background(self):
         """Render background"""
         self.window_surface.blit(self.background, [0, 0])
+
+    def draw_score(self):
+        """Draw score"""
+        text = text_hollow(self.font, "Score: " + str(self.score), RED, GREEN)
+        rect = text.get_rect()
+        rect.center = (WINDOW_WIDTH / 2, 40)
+        self.window_surface.blit(text, rect)
+        text = text_hollow(self.font, "Top score: " + str(self.top_score), RED, GREEN)
+        self.window_surface.blit(text, (10, 50))
+        # draw_text("Score: " + str(self.score), self.font,
+        #           RED, self.window_surface, (10, 10))
 
     def draw_background_lines(self, color):
         """Render background"""
@@ -346,13 +394,10 @@ class Game():
         """Event handler"""
         pressed = pygame.key.get_pressed()
         if (pressed[K_LCTRL] or pressed[K_RCTRL]) and pressed[K_q]:
-            pygame.quit()
-            sys.exit()
-
+            terminate()
         for event in pygame.event.get():
             if event.type == QUIT:
-                pygame.quit()
-                sys.exit()
+                terminate()
             if event.type == KEYDOWN:
                 self.player.handle_key_down(event.key)
             if event.type == KEYUP:
@@ -384,6 +429,7 @@ class Game():
                     self.pickup_sound.play()
                 self.enemies.remove(enemy)
                 self.player.set_collision()
+                self.score += 1
 
         self.player.draw()
         self.window_surface.blit(self.player.sprite, self.player.obj)
